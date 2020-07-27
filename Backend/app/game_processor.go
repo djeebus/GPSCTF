@@ -1,4 +1,4 @@
-package api
+package app
 
 import (
 	"encoding/json"
@@ -8,14 +8,22 @@ import (
 	"time"
 )
 
+type PlayerClient interface {
+	Close()
+	Send(buffer []byte)
+}
+
 type GameProcessor struct {
-	worker *Worker
-	lock   sync.Mutex
+	// public
+	Game        *db.Game
+
+	// private
+	manager *Worker
+	lock    sync.Mutex
 
 	inProgress  bool
 	start       time.Time
 	finish      time.Time
-	game        *db.Game
 	playerCount int
 	players     map[int64]*playerInfo
 
@@ -24,9 +32,17 @@ type GameProcessor struct {
 
 	cancel chan bool
 
-	register   chan *Client
-	unregister chan *Client
-	clients    map[*Client]bool
+	register   chan PlayerClient
+	unregister chan PlayerClient
+	clients    map[PlayerClient]bool
+}
+
+func (gp *GameProcessor) Register(client PlayerClient) {
+	gp.register <- client
+}
+
+func (gp *GameProcessor) Unregister(client PlayerClient) {
+	gp.unregister <- client
 }
 
 func (gp *GameProcessor) AddPlayer(player *db.Player) {
@@ -53,7 +69,7 @@ func (gp *GameProcessor) UpdatePlayer(playerId int64, latitude float64, longitud
 }
 
 func (gp *GameProcessor) StartGame() error {
-	game := gp.game
+	game := gp.Game
 
 	if gp.inProgress {
 		return &GameInProgressError{GameID: game.GameID}
@@ -86,15 +102,15 @@ func (gp *GameProcessor) ProcessGame() {
 		case client := <-gp.unregister:
 			if _, ok := gp.clients[client]; ok {
 				delete(gp.clients, client)
-				close(client.send)
+				client.Close()
 			}
 
-		// game was canceled
+		// app was canceled
 		case <-gp.cancel:
 			gp.endGame()
 			return
 
-		// run the game
+		// run the app
 		case <-ticker.C:
 			if gp.inProgress {
 				gameOver := gp.gameTick()
@@ -107,11 +123,11 @@ func (gp *GameProcessor) ProcessGame() {
 }
 
 func (gp *GameProcessor) endGame() {
-	delete(gp.worker.games, gp.game.GameID)
+	delete(gp.manager.games, gp.Game.GameID)
 
 	for client := range gp.clients {
 		delete(gp.clients, client)
-		close(client.send)
+		client.Close()
 	}
 }
 
@@ -150,6 +166,6 @@ func (gp *GameProcessor) broadcast(message interface{}) {
 	}
 
 	for client := range gp.clients {
-		client.send <- buf
+		client.Send(buf)
 	}
 }

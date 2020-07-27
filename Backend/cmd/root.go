@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/djeebus/gpsctf/Backend/db"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log"
 	"math/rand"
 	"os"
@@ -21,7 +20,7 @@ var rootCmd = &cobra.Command{
 	Short: "GPSCTF",
 
 	PreRun: func(cmd *cobra.Command, args []string) {
-		db.OpenDatabase(viper.Get("DatabasePath"))
+		db.OpenDatabase()
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {

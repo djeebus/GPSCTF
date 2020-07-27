@@ -2,41 +2,41 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/djeebus/gpsctf/Backend/app"
 	"github.com/djeebus/gpsctf/Backend/db"
 	"github.com/gorilla/websocket"
 	"log"
-	"time"
 )
 
 type Client struct {
-	processor *GameProcessor
+	processor *app.GameProcessor
 	conn      *websocket.Conn
 	send      chan []byte
 	game      *db.Game
 	player    *db.Player
 }
 
-const (
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
+func (c *Client) Send(buffer []byte) {
+	c.send <- buffer
+}
 
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
-)
+func (c *Client) Close() {
+	close(c.send)
+}
 
-func (client *Client) writeMessages() {
+func (c *Client) writeMessages() {
 	for {
 		select {
-		case message, ok := <-client.send:
+		case message, ok := <-c.send:
 			if !ok {
-				err := client.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
 					log.Printf("Failed to write close message: %s", err)
 				}
 				return
 			}
 
-			w, err := client.conn.NextWriter(websocket.TextMessage)
+			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				log.Printf("Failed to get next writer: %s", err)
 				return
@@ -50,17 +50,17 @@ func (client *Client) writeMessages() {
 	}
 }
 
-func (client *Client) readMessages() {
+func (c *Client) readMessages() {
 	defer func() {
-		client.processor.unregister <- client
-		err := client.conn.Close()
+		c.processor.Unregister(c)
+		err := c.conn.Close()
 		if err != nil {
 			log.Printf("Failed to close socket connection: %v", err)
 		}
 	}()
 
 	for {
-		_, message, err := client.conn.ReadMessage()
+		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("Socket unexpectedly closed: %v", err)
@@ -75,7 +75,7 @@ func (client *Client) readMessages() {
 			return
 		}
 
-		err = client.processor.UpdatePlayer(client.player.PlayerID, latlng.Latitude, latlng.Longitude)
+		err = c.processor.UpdatePlayer(c.player.PlayerID, latlng.Latitude, latlng.Longitude)
 		if err != nil {
 			log.Printf("Failed to update lat/lng: %v", err)
 		}

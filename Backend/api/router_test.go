@@ -89,7 +89,7 @@ func TestProcessTasks(t *testing.T) {
 	client := &http.Client{}
 
 	createGame := map[string]interface{}{
-		"name": "a test game",
+		"name": "a test app",
 		"latitude": 35,
 		"longitude": 35,
 		"radius": 0,
@@ -136,8 +136,8 @@ func TestProcessTasks(t *testing.T) {
 	}
 	defer ws2.Close()
 
-	// start the game
-	makeApiRequest(t, server, client, "POST",  fmt.Sprintf("/games/%d/start", game.GameID), nil, nil)
+	// start the app
+	makeApiRequest(t, server, client, "POST",  fmt.Sprintf("/games/%d/:start", game.GameID), nil, nil)
 
 	type Pair struct {
 		x *websocket.Conn
@@ -170,6 +170,6 @@ func TestProcessTasks(t *testing.T) {
 
 	winnerIdInt := int64(winnerId)
 	if winnerIdInt != player2.PlayerID {
-		t.Fatalf("The wrong player wong!")
+		t.Fatalf("The wrong player won! %d != %d", winnerIdInt, player2.PlayerID)
 	}
 }

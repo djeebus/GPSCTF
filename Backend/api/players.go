@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/djeebus/gpsctf/Backend/db"
+	"github.com/djeebus/gpsctf/Backend/app"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"net/http"
@@ -27,7 +28,7 @@ type CreatePlayerRequest struct {
 	Name   string `json:"name"`
 }
 
-func handleCreatePlayer(worker *Worker, w http.ResponseWriter, request *http.Request) {
+func handleCreatePlayer(worker *app.Worker, w http.ResponseWriter, request *http.Request) {
 	err, buffer := validateSchema(request, createPlayerSchema)
 	if err != nil {
 		renderError(w, err)
@@ -55,7 +56,7 @@ func handleCreatePlayer(worker *Worker, w http.ResponseWriter, request *http.Req
 	}
 
 	gp.AddPlayer(player)
-	RenderJson(w, player)
+	renderJson(w, player)
 }
 
 // some framework taken from https://github.com/gorilla/websocket/blob/master/examples/chat/client.go
@@ -64,7 +65,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func handleProcessPlayerMessages(worker *Worker, w http.ResponseWriter, request *http.Request) {
+func handleProcessPlayerMessages(worker *app.Worker, w http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	playerId, err := strconv.ParseInt(vars["playerId"], 10, 64)
 	if err != nil {
@@ -96,7 +97,7 @@ func handleProcessPlayerMessages(worker *Worker, w http.ResponseWriter, request 
 		conn:      conn,
 		send:      make(chan []byte, 256),
 	}
-	client.processor.register <- client
+	client.processor.Register(client)
 
 	go client.writeMessages()
 	go client.readMessages()

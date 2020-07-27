@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"github.com/spf13/viper"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,7 +12,12 @@ import (
 
 var sqlDb *sql.DB
 
-func ensureDatabaseExists(dbPath string) string {
+func ensureDatabaseExists() string {
+	dbPath := viper.GetString("DatabasePath")
+	if len(dbPath) == 0 {
+		dbPath = "gpsctf.db"
+	}
+
 	fullPath, err := filepath.Abs(dbPath)
 	if err != nil {
 		log.Fatalf("Failed to find abs path for %s: %v", dbPath, err)
@@ -38,7 +44,7 @@ func ensureDatabaseExists(dbPath string) string {
 func OpenDatabase() {
 	var err error
 
-	dbPath := ensureDatabaseExists("test.db")
+	dbPath := ensureDatabaseExists()
 	log.Printf("Database path: %s", dbPath)
 
 	sqlDb, err = sql.Open("sqlite3", dbPath)

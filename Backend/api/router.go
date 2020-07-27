@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/djeebus/gpsctf/Backend/app"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -8,9 +9,7 @@ import (
 func NewRouter() *mux.Router {
 	r := mux.NewRouter()
 
-	worker := &Worker{
-		games: make(map[int64]*GameProcessor),
-	}
+	worker := app.NewWorker()
 
 	r.Path("/status").HandlerFunc(handleStatus)
 
@@ -20,7 +19,7 @@ func NewRouter() *mux.Router {
 			handleCreateGame(worker, w, r)
 		})
 
-	r.Path("/games/{gameId}/start").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.Path("/games/{gameId}/:start").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handleStartGame(worker, w, r)
 	})
 

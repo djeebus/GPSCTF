@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/djeebus/gpsctf/Backend/db"
+	"github.com/djeebus/gpsctf/Backend/app"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -32,7 +33,7 @@ type CreateGameRequest struct {
 	Radius uint8 `json:"radius"`
 }
 
-func handleCreateGame(worker *Worker, w http.ResponseWriter, request *http.Request) {
+func handleCreateGame(worker *app.Worker, w http.ResponseWriter, request *http.Request) {
 	err, buffer := validateSchema(request, createGameSchema)
 	if err != nil {
 		renderError(w, err)
@@ -59,10 +60,10 @@ func handleCreateGame(worker *Worker, w http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	RenderJson(w, game)
+	renderJson(w, game)
 }
 
-func handleStartGame(worker *Worker, w http.ResponseWriter, request *http.Request) {
+func handleStartGame(worker *app.Worker, w http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	gameId, err := strconv.ParseInt(vars["gameId"], 10, 64)
 	if err != nil {
@@ -76,5 +77,5 @@ func handleStartGame(worker *Worker, w http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	RenderJson(w, gp.game)
+	renderJson(w, gp.Game)
 }

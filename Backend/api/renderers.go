@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func RenderJson(writer io.Writer, data interface{}) {
+func renderJson(writer io.Writer, data interface{}) {
 	err := json.NewEncoder(writer).Encode(data)
 	if err != nil {
 		fmt.Println("failed to write json")
@@ -31,7 +31,7 @@ func renderError(writer http.ResponseWriter, err error) {
 			}
 
 		}
-		RenderJson(writer, map[string]interface{}{
+		renderJson(writer, map[string]interface{}{
 			"code":   "invalid_request",
 			"errors": errors,
 		})
@@ -39,6 +39,6 @@ func renderError(writer http.ResponseWriter, err error) {
 	default:
 		fmt.Println(err)
 		writer.WriteHeader(500) // todo: use 400 for jsonschema errors
-		RenderJson(writer, map[string]interface{}{"code": "server_error"})
+		renderJson(writer, map[string]interface{}{"code": "server_error"})
 	}
 }
